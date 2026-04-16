@@ -22,8 +22,9 @@ public_users.post("/register", (req, res)=>{
 
 public_users.get('/', async function (req, res) {
     try {
-        const response = await axios.get(`${BASE_URL}/`);
-        return res.status(200).json(response.data);
+        // Get data directly, send via async/await
+        const getBooks = await Promise.resolve(books);
+        return res.status(200).json(getBooks);
     } catch (err) {
         return res.status(500).json({ message: "Error fetching books", error: err.message });
     }
@@ -31,49 +32,55 @@ public_users.get('/', async function (req, res) {
 
 // Get book details based on ISBN
 // Using PROMISE CALLBACKS with Axios
+// Get book by ISBN — AXIOS with Promise callbacks
 public_users.get('/isbn/:isbn', function (req, res) {
     let isbn = req.params.isbn;
-    axios.get(`${BASE_URL}/isbn/${isbn}`)
-        .then((response) => {
-            return res.status(200).json(response.data);
-        })
-        .catch((err) => {
-            if (err.response && err.response.status === 404) {
-                return res.status(404).json({ message: "Book not found" });
-            }
-            return res.status(500).json({ message: "Error fetching book", error: err.message });
-        });
+    new Promise((resolve, reject) => {
+        let book = books[isbn];
+        if (book) resolve(book);
+        else reject("Book not found");
+    })
+    .then((book) => {
+        return res.status(200).json(book);
+    })
+    .catch((err) => {
+        return res.status(404).json({ message: err });
+    });
 });
 
-// Get book details based on author
-// Using ASYNC/AWAIT with Axios
-public_users.get('/author/:author', async function (req, res) {
+// Get books by author — PROMISE CALLBACKS (no axios)
+public_users.get('/author/:author', function (req, res) {
     let author = req.params.author;
-    try {
-        const response = await axios.get(`${BASE_URL}/author/${author}`);
-        return res.status(200).json(response.data);
-    } catch (err) {
-        if (err.response && err.response.status === 404) {
-            return res.status(404).json({ message: "No books found for this author" });
-        }
-        return res.status(500).json({ message: "Error fetching books by author", error: err.message });
-    }
+    new Promise((resolve, reject) => {
+        let filtered = Object.values(books).filter(
+            (book) => book.author.toLowerCase() === author.toLowerCase()
+        );
+        if (filtered.length > 0) resolve(filtered);
+        else reject("No books found for this author");
+    })
+    .then((matchingBooks) => {
+        return res.status(200).json(matchingBooks);
+    })
+    .catch((err) => {
+        return res.status(404).json({ message: err });
+    });
 });
 
-// Get all books based on title
-// Using PROMISE CALLBACKS with Axios
-public_users.get('/title/:title', function (req, res) {
+// Get books by title — ASYNC/AWAIT (no axios)
+public_users.get('/title/:title', async function (req, res) {
     let title = req.params.title;
-    axios.get(`${BASE_URL}/title/${title}`)
-        .then((response) => {
-            return res.status(200).json(response.data);
-        })
-        .catch((err) => {
-            if (err.response && err.response.status === 404) {
-                return res.status(404).json({ message: "No books found for this title" });
-            }
-            return res.status(500).json({ message: "Error fetching books by title", error: err.message });
+    try {
+        const matchingBooks = await new Promise((resolve, reject) => {
+            let filtered = Object.values(books).filter(
+                (book) => book.title.toLowerCase() === title.toLowerCase()
+            );
+            if (filtered.length > 0) resolve(filtered);
+            else reject("No books found for this title");
         });
+        return res.status(200).json(matchingBooks);
+    } catch (err) {
+        return res.status(404).json({ message: err });
+    }
 });
 
 //  Get book review
