@@ -31,37 +31,63 @@ public_users.get('/', async function (req, res) {
 });
 
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn',function (req, res) {
+public_users.get('/isbn/:isbn',async function (req, res) {
     let isbn = req.params.isbn;
-    let book = books[isbn];
-    if(book){
-        return res.status(200).send(JSON.stringify(book))
-    }else{
-        return res.status(404).json({message: "Book not found"});
-    }
-  //Write your code here
+     new Promise((res, rej)=>{
+        let book = books[isbn];
+        if(book){
+            res(book);
+        }else{
+            rej("Book not found");
+        }
+     }).then((book)=>{
+        return res.status(200).json(book);
+     }).catch((err)=>{
+        return res.status(404).json({ message: err });
+     });
  
  });
   
 // Get book details based on author
-public_users.get('/author/:author',function (req, res) {
-  let author = req.params.author.toLocaleLowerCase();
-  let book = Object.values(books).filter((book)=> book.author.toLocaleLowerCase() === author);
-  if(book.length > 0){
-    return res.status(200).send(JSON.stringify(book))
-  }else{
-    return res.status(404).json({message: "Book not found"});
+public_users.get('/author/:author',async function (req, res) {
+  let author = req.params.author;
+  console.log(author);
+  try{
+        const book = new Promise((res, rej)=>{
+            let filtered = Object.values(books).filter(
+                (book) => book.author.toLocaleLowerCase() === author.toLocaleLowerCase()
+            );
+            console.log(filtered);
+            if (filtered.length > 0) {
+                res(filtered);
+            } else {
+                rej("No books found for this author");
+            }
+        }).then((book) => {
+            return res.status(200).json(book);
+        })
+    }catch(err){
+        return res.status(404).json({ message: err });
   }
 });
 
 // Get all books based on title
-public_users.get('/title/:title',function (req, res) {
+public_users.get('/title/:title',async function (req, res) {
     let title = req.params.title.toLocaleLowerCase();
-    let book = Object.values(books).filter((book)=> book.title.toLocaleLowerCase() === title);
-    if(book.length > 0){
-        return res.status(200).send(JSON.stringify(book))
-    }else{
-        return res.status(404).json({message: "Book not found"});
+    try{
+        const book = await new Promise((res,rej)=>{
+            let filtered = Object.values(books).filter(
+                (book) => book.title.toLowerCase() === title.toLowerCase()
+            );
+            if (filtered.length > 0) {
+                res(filtered);
+            } else {
+                rejec("No books found for this title");
+            }
+        });
+        return res.status(200).json(book);
+    }catch(err){
+        return res.status(404).json({ message: err });
     }
 });
 
