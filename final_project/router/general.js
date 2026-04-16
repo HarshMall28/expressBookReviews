@@ -2,6 +2,8 @@ const express = require('express');
 let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
+const axios = require('axios');
+const BASE_URL = 'http://localhost:5000';
 const public_users = express.Router();
 
 
@@ -18,77 +20,60 @@ public_users.post("/register", (req, res)=>{
     }
 })
 
-// Get the book list available in the shop
 public_users.get('/', async function (req, res) {
-  try{
-    const getBooks = await new Promise((res,rej)=>{
-        res(books)
-    })
-    return res.status(200).send(JSON.stringify(getBooks))
-  }catch(err){
-    return res.status(500).json({ message: "Error fetching books" });
-  }
+    try {
+        const response = await axios.get(`${BASE_URL}/`);
+        return res.status(200).json(response.data);
+    } catch (err) {
+        return res.status(500).json({ message: "Error fetching books", error: err.message });
+    }
 });
 
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn',async function (req, res) {
+// Using PROMISE CALLBACKS with Axios
+public_users.get('/isbn/:isbn', function (req, res) {
     let isbn = req.params.isbn;
-     new Promise((res, rej)=>{
-        let book = books[isbn];
-        if(book){
-            res(book);
-        }else{
-            rej("Book not found");
-        }
-     }).then((book)=>{
-        return res.status(200).json(book);
-     }).catch((err)=>{
-        return res.status(404).json({ message: err });
-     });
- 
- });
-  
-// Get book details based on author
-public_users.get('/author/:author',async function (req, res) {
-  let author = req.params.author;
-  console.log(author);
-  try{
-        const book = new Promise((res, rej)=>{
-            let filtered = Object.values(books).filter(
-                (book) => book.author.toLocaleLowerCase() === author.toLocaleLowerCase()
-            );
-            console.log(filtered);
-            if (filtered.length > 0) {
-                res(filtered);
-            } else {
-                rej("No books found for this author");
-            }
-        }).then((book) => {
-            return res.status(200).json(book);
+    axios.get(`${BASE_URL}/isbn/${isbn}`)
+        .then((response) => {
+            return res.status(200).json(response.data);
         })
-    }catch(err){
-        return res.status(404).json({ message: err });
-  }
+        .catch((err) => {
+            if (err.response && err.response.status === 404) {
+                return res.status(404).json({ message: "Book not found" });
+            }
+            return res.status(500).json({ message: "Error fetching book", error: err.message });
+        });
+});
+
+// Get book details based on author
+// Using ASYNC/AWAIT with Axios
+public_users.get('/author/:author', async function (req, res) {
+    let author = req.params.author;
+    try {
+        const response = await axios.get(`${BASE_URL}/author/${author}`);
+        return res.status(200).json(response.data);
+    } catch (err) {
+        if (err.response && err.response.status === 404) {
+            return res.status(404).json({ message: "No books found for this author" });
+        }
+        return res.status(500).json({ message: "Error fetching books by author", error: err.message });
+    }
 });
 
 // Get all books based on title
-public_users.get('/title/:title',async function (req, res) {
-    let title = req.params.title.toLocaleLowerCase();
-    try{
-        const book = await new Promise((res,rej)=>{
-            let filtered = Object.values(books).filter(
-                (book) => book.title.toLowerCase() === title.toLowerCase()
-            );
-            if (filtered.length > 0) {
-                res(filtered);
-            } else {
-                rejec("No books found for this title");
+// Using PROMISE CALLBACKS with Axios
+public_users.get('/title/:title', function (req, res) {
+    let title = req.params.title;
+    axios.get(`${BASE_URL}/title/${title}`)
+        .then((response) => {
+            return res.status(200).json(response.data);
+        })
+        .catch((err) => {
+            if (err.response && err.response.status === 404) {
+                return res.status(404).json({ message: "No books found for this title" });
             }
+            return res.status(500).json({ message: "Error fetching books by title", error: err.message });
         });
-        return res.status(200).json(book);
-    }catch(err){
-        return res.status(404).json({ message: err });
-    }
 });
 
 //  Get book review
