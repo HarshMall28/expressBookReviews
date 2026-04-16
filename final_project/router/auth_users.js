@@ -51,7 +51,7 @@ regd_users.post("/login", (req, res) => {
     }
 });
 // Add a book review
-regd_users.put("/auth/review/:isbn", (req, res) => {
+regd_users.put("/review/:isbn", (req, res) => {
     let isbn = req.params.isbn;
     let review = req.query.review;
 
@@ -81,7 +81,7 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
     });
 });
 
-regd_users.delete("/auth/review/:isbn", (req, res) => {
+regd_users.delete("/review/:isbn", (req, res) => {
     let isbn = req.params.isbn;
     let username = req.session.authorization.username;
 
