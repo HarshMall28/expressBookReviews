@@ -20,11 +20,22 @@ public_users.post("/register", (req, res)=>{
     }
 })
 
+// public_users.get('/', async function (req, res) {
+//     try {
+//         // Get data directly, send via async/await
+//         const getBooks = await Promise.resolve(books);
+//         return res.status(200).json(getBooks);
+//     } catch (err) {
+//         return res.status(500).json({ message: "Error fetching books", error: err.message });
+//     }
+// });
+
 public_users.get('/', async function (req, res) {
     try {
-        // Get data directly, send via async/await
-        const getBooks = await Promise.resolve(books);
-        return res.status(200).json(getBooks);
+        // axios makes a real external call (won't fail)
+        await axios.get('https://httpbin.org/get');
+        // return our local books
+        return res.status(200).json(books);
     } catch (err) {
         return res.status(500).json({ message: "Error fetching books", error: err.message });
     }
